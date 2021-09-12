@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>nucleo_F030R8_blinky</name>
+	<name>nucleo_F030R8_uart_dma</name>
 	<comment></comment>
 	<projects>
 	</projects>

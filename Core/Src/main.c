@@ -19,13 +19,12 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "dma.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
-#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -35,6 +34,12 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+#define LED_ON()        HAL_GPIO_WritePin(LED_GRN_GPIO_Port, LED_GRN_Pin, GPIO_PIN_SET)
+#define LED_OFF()       HAL_GPIO_WritePin(LED_GRN_GPIO_Port, LED_GRN_Pin, GPIO_PIN_RESET)
+#define LED_TOGGLE()    HAL_GPIO_TogglePin(LED_GRN_GPIO_Port, LED_GRN_Pin)
+
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -46,12 +51,18 @@
 
 /* USER CODE BEGIN PV */
 
+/* Buffer used for transmission */
+uint8_t TxBuffer[] = "HELLO WOLRD!\r\n";
+
+__IO ITStatus UartReady = RESET;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
-void Delay_ms(uint32_t delay_ms);
+
 
 /* USER CODE END PFP */
 
@@ -88,25 +99,47 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+
+  /* NOTE: DMA_INIT must be before UART_INIT. Why? */
+  MX_DMA_Init();
   MX_USART2_UART_Init();
+
+  /* Initialize interrupts */
+  MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
 
-  printf("Hello world\r\n");
+  /* Wait for button press */
+  while (HAL_GPIO_ReadPin(BTN_USER_GPIO_Port, BTN_USER_Pin) == GPIO_PIN_SET)
+  {
+      /* toggle LED while waiting */
+      HAL_GPIO_TogglePin(LED_GRN_GPIO_Port, LED_GRN_Pin);
+      HAL_Delay(500);
+  }
+  /* turn off LED */
+  HAL_GPIO_WritePin(LED_GRN_GPIO_Port, LED_GRN_Pin, GPIO_PIN_RESET);
 
-  printf( "Build: %s %s\r\n", __DATE__, __TIME__ );
+
+#if 0
+  /* Send the data out UART2 without DMA*/
+  if (HAL_UART_Transmit(&huart2, TxBuffer, 14, 100) != HAL_OK)
+  {
+      Error_Handler();
+  }
+#else
+  /* Send the data out UART2 with DMA */
+  if (HAL_UART_Transmit_DMA(&huart2, TxBuffer, 14) != HAL_OK)
+  {
+      Error_Handler();
+  }
+#endif
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint32_t count = 0;
+
   while (1)
   {
-      HAL_GPIO_WritePin(LED_GRN_GPIO_Port, LED_GRN_Pin, GPIO_PIN_SET);
-      printf("%ld\r\n", ++count);
-      HAL_GPIO_WritePin(LED_GRN_GPIO_Port, LED_GRN_Pin, GPIO_PIN_RESET);
-      Delay_ms(1000);
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -151,22 +184,23 @@ void SystemClock_Config(void)
   }
 }
 
+/**
+  * @brief NVIC Configuration.
+  * @retval None
+  */
+static void MX_NVIC_Init(void)
+{
+  /* DMA1_Channel4_5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel4_5_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_5_IRQn);
+}
+
 /* USER CODE BEGIN 4 */
 
-/**
- * Delay using a spin wait for the specified number of milliseconds.
- * Timing is based off the SysTick timer.
- */
-void Delay_ms(uint32_t delay_ms)
+void HAL_UART_TxCpltCallback (UART_HandleTypeDef * huart)
 {
-    /*  Handles SysTick roll-over: https://stackoverflow.com/questions/61443/  */
-    uint32_t start_time_ms = HAL_GetTick();
-    while ( (HAL_GetTick() - start_time_ms) < delay_ms)
-    {
-        // spin wait
-    }
-
-    return;
+    LED_ON();
+    //UartReady == SET;
 }
 
 /* USER CODE END 4 */
@@ -179,9 +213,14 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
+  // __disable_irq();
   while (1)
   {
+      // Slow LED Blink on Error (1 sec on 1sec off)
+      LED_ON();
+      HAL_Delay(1000);
+      LED_OFF();
+      HAL_Delay(1000);
   }
   /* USER CODE END Error_Handler_Debug */
 }
