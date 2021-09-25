@@ -31,6 +31,8 @@
 #include <sys/time.h>
 #include <sys/times.h>
 
+#include "usart.h"
+
 
 /* Variables */
 extern int __io_putchar(int ch) __attribute__((weak));
@@ -77,12 +79,16 @@ return len;
 
 __attribute__((weak)) int _write(int file, char *ptr, int len)
 {
+#if 1
+    HAL_UART_Transmit(&huart2, (uint8_t *)ptr, (uint16_t)len, 100);
+#else
     int DataIdx;
 
     for (DataIdx = 0; DataIdx < len; DataIdx++)
     {
         __io_putchar(*ptr++);
     }
+#endif
     return len;
 }
 

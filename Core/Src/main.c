@@ -25,6 +25,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -99,15 +100,18 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-
-  /* NOTE: DMA_INIT must be before UART_INIT. Why? */
-  MX_DMA_Init();
   MX_USART2_UART_Init();
+  MX_DMA_Init();
+  MX_USART1_UART_Init();
 
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
 
+  printf("\r\nNUCLEO_F030R8_UART_DMA\r\n");
+  printf( "Build: %s %s\r\n", __DATE__, __TIME__ );
+
+#if 0
   /* Wait for button press */
   while (HAL_GPIO_ReadPin(BTN_USER_GPIO_Port, BTN_USER_Pin) == GPIO_PIN_SET)
   {
@@ -117,21 +121,22 @@ int main(void)
   }
   /* turn off LED */
   HAL_GPIO_WritePin(LED_GRN_GPIO_Port, LED_GRN_Pin, GPIO_PIN_RESET);
-
-
-#if 0
-  /* Send the data out UART2 without DMA*/
-  if (HAL_UART_Transmit(&huart2, TxBuffer, 14, 100) != HAL_OK)
-  {
-      Error_Handler();
-  }
-#else
-  /* Send the data out UART2 with DMA */
-  if (HAL_UART_Transmit_DMA(&huart2, TxBuffer, 14) != HAL_OK)
-  {
-      Error_Handler();
-  }
 #endif
+
+
+  /* Send the data out UART2 with DMA */
+  HAL_StatusTypeDef ret = HAL_UART_Transmit_DMA(&huart1, TxBuffer, 14);
+  HAL_UART_StateTypeDef state = huart1.gState;
+  printf("Return1: %d\r\n", (uint16_t) ret);
+  printf("State 1: %d\r\n", (uint16_t) state);
+
+//  ret = HAL_UART_Transmit_DMA(&huart1, TxBuffer, 14);
+//  state = huart1.gState;
+//  printf("Return2: %d\r\n", (uint16_t) ret);
+//  printf("State 2: %d\r\n", (uint16_t) state);
+
+  HAL_Delay(100);
+
 
   /* USER CODE END 2 */
 
@@ -155,6 +160,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -179,6 +185,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1;
+  PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK1;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
   }
