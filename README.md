@@ -1,10 +1,10 @@
-# nucleo_F030R8_blinky
+# nucleo_F030R8_uart_dma
 
-Template to start STM32 C source code in STM32CubeIDE for NUCLEO-F030R8 evaluation board. On the ST-LINK UART.
+Project for developing a UART driver with DMA for use in other projects.
 
-Blinks the Green user LED until the blue user button is pressed. Then prints a message on USART2 (ST-LINK) using DMA.
+STM32 C source code in STM32CubeIDE for NUCLEO-F030R8 evaluation board. 
 
-UART setting on ST-LINK is 115.2K, 8N1.
+UART settings are ST-LINK is 115.2K, 8N1.
 
 ## License:
 
