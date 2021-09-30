@@ -55,7 +55,7 @@
 /* Buffer used for transmission */
 uint8_t TxBuffer[] = "HELLO WOLRD!\r\n";
 
-__IO ITStatus UartReady = RESET;
+__IO uint32_t UartIsrCount = 0;
 
 /* USER CODE END PV */
 
@@ -64,6 +64,8 @@ void SystemClock_Config(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 
+void My_UART_TxCpltCallback (UART_HandleTypeDef * huart);
+void My_DMA_XferCpltCallback(DMA_HandleTypeDef * hdma);
 
 /* USER CODE END PFP */
 
@@ -123,6 +125,10 @@ int main(void)
   HAL_GPIO_WritePin(LED_GRN_GPIO_Port, LED_GRN_Pin, GPIO_PIN_RESET);
 #endif
 
+  UartIsrCount = 0;
+
+  /* set a Transfer Complete Callbacks */
+  huart1.TxCpltCallback = My_UART_TxCpltCallback;
 
   /* Send the data out UART2 with DMA */
   HAL_StatusTypeDef ret = HAL_UART_Transmit_DMA(&huart1, TxBuffer, 14);
@@ -130,13 +136,16 @@ int main(void)
   printf("Return1: %d\r\n", (uint16_t) ret);
   printf("State 1: %d\r\n", (uint16_t) state);
 
-//  ret = HAL_UART_Transmit_DMA(&huart1, TxBuffer, 14);
-//  state = huart1.gState;
-//  printf("Return2: %d\r\n", (uint16_t) ret);
-//  printf("State 2: %d\r\n", (uint16_t) state);
+  HAL_Delay(100);
+  printf("UART ISR Count %ld\r\n", UartIsrCount);
+
+  ret = HAL_UART_Transmit_DMA(&huart1, TxBuffer, 14);
+  state = huart1.gState;
+  printf("Return2: %d\r\n", (uint16_t) ret);
+  printf("State 2: %d\r\n", (uint16_t) state);
 
   HAL_Delay(100);
-
+  printf("UART ISR Count %ld\r\n", UartIsrCount);
 
   /* USER CODE END 2 */
 
@@ -205,14 +214,22 @@ static void MX_NVIC_Init(void)
   /* DMA1_Channel4_5_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel4_5_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel4_5_IRQn);
+  /* DMA1_Channel2_3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
+  /* USART1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(USART1_IRQn);
+  /* USART2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(USART2_IRQn);
 }
 
 /* USER CODE BEGIN 4 */
 
-void HAL_UART_TxCpltCallback (UART_HandleTypeDef * huart)
+void My_UART_TxCpltCallback (UART_HandleTypeDef * huart)
 {
-    LED_ON();
-    //UartReady == SET;
+    ++UartIsrCount;
 }
 
 /* USER CODE END 4 */
