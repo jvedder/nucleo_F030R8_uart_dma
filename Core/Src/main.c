@@ -130,22 +130,29 @@ int main(void)
   /* set a Transfer Complete Callbacks */
   huart1.TxCpltCallback = My_UART_TxCpltCallback;
 
+  HAL_StatusTypeDef ret;
+
   /* Send the data out UART2 with DMA */
-  HAL_StatusTypeDef ret = HAL_UART_Transmit_DMA(&huart1, TxBuffer, 14);
-  HAL_UART_StateTypeDef state = huart1.gState;
-  printf("Return1: %d\r\n", (uint16_t) ret);
-  printf("State 1: %d\r\n", (uint16_t) state);
-
-  HAL_Delay(100);
-  printf("UART ISR Count %ld\r\n", UartIsrCount);
-
+  printf("State: %d\r\n", (uint16_t) huart1.gState);
+  printf("Transmit 1...\r\n");
   ret = HAL_UART_Transmit_DMA(&huart1, TxBuffer, 14);
-  state = huart1.gState;
-  printf("Return2: %d\r\n", (uint16_t) ret);
-  printf("State 2: %d\r\n", (uint16_t) state);
+  printf("Return1: %d\r\n", (uint16_t) ret);
+  printf("State 1: %d\r\n", (uint16_t) huart1.gState);
 
   HAL_Delay(100);
+  printf("delay...\r\n");
   printf("UART ISR Count %ld\r\n", UartIsrCount);
+  printf("State: %d\r\n", (uint16_t) huart1.gState);
+
+  printf("Transmit 2...\r\n");
+   ret = HAL_UART_Transmit_DMA(&huart1, TxBuffer, 14);
+  printf("Return2: %d\r\n", (uint16_t) ret);
+  printf("State 2: %d\r\n", (uint16_t) huart1.gState);
+
+  HAL_Delay(100);
+  printf("delay...\r\n");
+  printf("UART ISR Count %ld\r\n", UartIsrCount);
+  printf("State: %d\r\n", (uint16_t) huart1.gState);
 
   /* USER CODE END 2 */
 
