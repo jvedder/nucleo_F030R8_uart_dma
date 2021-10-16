@@ -46,10 +46,38 @@
  *  Public Defines and Macros
  */
 
+/**
+  * @brief  UART handle Structure definition
+  */
+typedef struct UART_Fifo_ItemStruct
+{
+    uint8_t                     *data;
+    volatile uint16_t           size;
+    struct UART_Fifo_ItemStruct *next;
+
+} UART_Fifo_ItemTypeDef;
+
+/**
+  * @brief  UART handle Structure definition
+  */
+typedef struct UART_Fifo_HandleStruct
+{
+  UART_HandleTypeDef             *huart;
+  volatile UART_Fifo_ItemTypeDef *head;
+  UART_Fifo_ItemTypeDef          *tail;
+
+} UART_Fifo_HandleTypeDef;
+
+
+extern UART_Fifo_HandleTypeDef huart_fifo1;
+extern UART_Fifo_HandleTypeDef huart_fifo2;
 
 /**
  *  Public Function Prototypes
  */
+void UART_Fifo_Init( void );
+void UART_Fifo_Transmit (UART_Fifo_HandleTypeDef *fifo, UART_Fifo_ItemTypeDef *item);
+void UART_Fifo_TxCpltCallback (UART_HandleTypeDef *huart);
 
 
 #endif /* UART_FIFO_H */

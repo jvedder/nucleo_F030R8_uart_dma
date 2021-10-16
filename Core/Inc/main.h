@@ -54,6 +54,12 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+void blink_fault( uint32_t code );
+void assert_failed(uint8_t *file, uint32_t line);
+
+/* debug instrumentation */
+extern __IO uint32_t ISRcount;
+
 
 /* USER CODE END EFP */
 

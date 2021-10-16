@@ -22,6 +22,7 @@
 #include "dma.h"
 #include "usart.h"
 #include "gpio.h"
+#include "uart_fifo.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -53,9 +54,19 @@
 /* USER CODE BEGIN PV */
 
 /* Buffer used for transmission */
-uint8_t TxBuffer[] = "HELLO WOLRD!\r\n";
+//                     123456789-1234 5
+uint8_t TxBuffer1[] = "HELLO WORLD 1\r\n";
+uint8_t TxBuffer2[] = "HELLO WORLD 2\r\n";
+uint8_t TxBuffer3[] = "HELLO WORLD 3\r\n";
+uint8_t TxBuffer4[] = "HELLO WORLD 4\r\n";
 
-__IO uint32_t UartIsrCount = 0;
+UART_Fifo_ItemTypeDef item1;
+UART_Fifo_ItemTypeDef item2;
+UART_Fifo_ItemTypeDef item3;
+UART_Fifo_ItemTypeDef item4;
+
+/* debug instrumentation */
+__IO uint32_t ISRcount = 0;
 
 /* USER CODE END PV */
 
@@ -106,6 +117,8 @@ int main(void)
   MX_DMA_Init();
   MX_USART1_UART_Init();
 
+  UART_Fifo_Init();
+
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
@@ -125,34 +138,28 @@ int main(void)
   HAL_GPIO_WritePin(LED_GRN_GPIO_Port, LED_GRN_Pin, GPIO_PIN_RESET);
 #endif
 
-  UartIsrCount = 0;
+  item1.data = TxBuffer1;
+  item1.size = 15;
+  item2.data = TxBuffer2;
+  item2.size = 15;
+  item3.data = TxBuffer3;
+  item3.size = 15;
+  item4.data = TxBuffer4;
+  item4.size = 15;
 
-  /* set a Transfer Complete Callbacks */
-  huart1.TxCpltCallback = My_UART_TxCpltCallback;
+  ISRcount = 0;
 
-  HAL_StatusTypeDef ret;
-
-  /* Send the data out UART2 with DMA */
-  printf("State: %d\r\n", (uint16_t) huart1.gState);
-  printf("Transmit 1...\r\n");
-  ret = HAL_UART_Transmit_DMA(&huart1, TxBuffer, 14);
-  printf("Return1: %d\r\n", (uint16_t) ret);
-  printf("State 1: %d\r\n", (uint16_t) huart1.gState);
-
+  printf("Loading Fifo\r\n");
+  UART_Fifo_Transmit(&huart_fifo1, &item1);
+  UART_Fifo_Transmit(&huart_fifo1, &item2);
+  UART_Fifo_Transmit(&huart_fifo1, &item3);
+  UART_Fifo_Transmit(&huart_fifo1, &item4);
+  printf("ISRCount %ld\r\n", ISRcount);  /* should be 0 if we are fast enough */
+  printf("Delay...\r\n");
   HAL_Delay(100);
-  printf("delay...\r\n");
-  printf("UART ISR Count %ld\r\n", UartIsrCount);
-  printf("State: %d\r\n", (uint16_t) huart1.gState);
-
-  printf("Transmit 2...\r\n");
-   ret = HAL_UART_Transmit_DMA(&huart1, TxBuffer, 14);
-  printf("Return2: %d\r\n", (uint16_t) ret);
-  printf("State 2: %d\r\n", (uint16_t) huart1.gState);
-
-  HAL_Delay(100);
-  printf("delay...\r\n");
-  printf("UART ISR Count %ld\r\n", UartIsrCount);
-  printf("State: %d\r\n", (uint16_t) huart1.gState);
+  printf("ISRCount %ld\r\n", ISRcount); /* should be 4 as fifo (fifo empty) */
+  printf("Fifo is empty %s\r\n", (huart_fifo1.head == NULL ? "true" : "false"));
+  printf("Done.\r\n");
 
   /* USER CODE END 2 */
 
@@ -234,10 +241,37 @@ static void MX_NVIC_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+#if 0
 void My_UART_TxCpltCallback (UART_HandleTypeDef * huart)
 {
     ++UartIsrCount;
 }
+#endif
+
+void blink_fault( uint32_t code )
+{
+    /* choose roughly clock speed / 24 forDELAY_LOOPS */
+    #define DELAY_LOOPS 2000000
+    uint32_t count;
+    uint32_t delay;
+
+    HAL_GPIO_WritePin( LED_GRN_GPIO_Port, LED_GRN_Pin, GPIO_PIN_SET );
+    while ( 1 )
+    {
+        for ( count = code; count; --count )
+        {
+            HAL_GPIO_WritePin( LED_GRN_GPIO_Port, LED_GRN_Pin, GPIO_PIN_SET );
+            for ( delay = DELAY_LOOPS; delay; --delay )
+                /* spin wait */;
+            HAL_GPIO_WritePin( LED_GRN_GPIO_Port, LED_GRN_Pin, GPIO_PIN_RESET );
+            for ( delay = DELAY_LOOPS; delay; --delay )
+                /* spin wait */;
+        }
+        for ( delay = 4 * DELAY_LOOPS; delay; --delay )
+            /* spin wait */;
+    }
+}
+
 
 /* USER CODE END 4 */
 
@@ -274,6 +308,9 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+    printf("assert_failed\r\n");
+    printf("File: %s\r\n", file);
+    printf("Line: %ld\r\n", line;)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
