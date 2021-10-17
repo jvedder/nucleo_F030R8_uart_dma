@@ -70,6 +70,7 @@ void UART_Fifo_Init( void )
     huart1.TxCpltCallback = UART_Fifo_TxCpltCallback;
     huart2.TxCpltCallback = UART_Fifo_TxCpltCallback;
 
+    HAL_UART_Receive_DMA(&huart1, huart1_fifo.RxBuffer, RX_BUFFER_LENGTH);
 }
 
 void UART_Fifo_Transmit (UART_Fifo_HandleTypeDef *fifo, UART_Fifo_ItemTypeDef *item)
@@ -108,6 +109,47 @@ void UART_Fifo_Transmit (UART_Fifo_HandleTypeDef *fifo, UART_Fifo_ItemTypeDef *i
     {
         HAL_UART_Transmit_DMA(fifo->huart, item->data, item->size);
     }
+}
+
+uint16_t UART_Fifo_TxIsEmpty(UART_Fifo_HandleTypeDef *fifo)
+{
+    assert_param(fifo != NULL);
+
+    return (fifo->head == NULL) ? 1 : 0;
+}
+
+
+int16_t UART_Fifo_Receive(UART_Fifo_HandleTypeDef *fifo)
+{
+    assert_param(fifo != NULL);
+
+    /* get transfer count from circular DMA, which counts down */
+    uint32_t RxIn = RX_BUFFER_LENGTH - fifo->huart->hdmarx->Instance->CNDTR;
+
+    /* return -1 if FIFO is empty */
+    int16_t data = -1;
+
+    /* if circular buffer is not empty */
+    if (fifo->RxOut != RxIn)
+    {
+        /* pull current item out of circular buffer */
+        data = fifo->RxBuffer[fifo->RxOut];
+
+        /* move index to the next item; wrap if at end of buffer */
+        fifo->RxOut = (fifo->RxOut + 1) % RX_BUFFER_LENGTH;
+    }
+    return data;
+}
+
+uint16_t UART_Fifo_RxIsEmpty(UART_Fifo_HandleTypeDef *fifo)
+{
+    assert_param(fifo != NULL);
+
+    /* get transfer count from circular DMA, which counts down */
+    uint32_t RxIn = RX_BUFFER_LENGTH - fifo->huart->hdmarx->Instance->CNDTR;
+
+    /* if circular buffer is not empty */
+    return (fifo->RxOut == RxIn) ? 1 : 0;
 }
 
 void UART_Fifo_TxCpltCallback (UART_HandleTypeDef *huart)

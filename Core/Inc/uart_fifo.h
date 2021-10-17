@@ -46,6 +46,8 @@
  *  Public Defines and Macros
  */
 
+#define RX_BUFFER_LENGTH    32
+
 /**
   * @brief  UART handle Structure definition
   */
@@ -62,12 +64,15 @@ typedef struct UART_Fifo_ItemStruct
   */
 typedef struct UART_Fifo_HandleStruct
 {
-  UART_HandleTypeDef             *huart;
-  volatile UART_Fifo_ItemTypeDef *head;
-  UART_Fifo_ItemTypeDef          *tail;
+    /* Linked listed for UART Transmit via DMA */
+    UART_HandleTypeDef              *huart;
+    volatile UART_Fifo_ItemTypeDef  *head;
+    UART_Fifo_ItemTypeDef           *tail;
 
+    /* Circular buffer for UART Receive via DMA */
+    uint8_t                         RxBuffer[RX_BUFFER_LENGTH];
+    uint16_t                        RxOut;
 } UART_Fifo_HandleTypeDef;
-
 
 extern UART_Fifo_HandleTypeDef huart1_fifo;
 extern UART_Fifo_HandleTypeDef huart2_fifo;
@@ -77,6 +82,9 @@ extern UART_Fifo_HandleTypeDef huart2_fifo;
  */
 void UART_Fifo_Init( void );
 void UART_Fifo_Transmit (UART_Fifo_HandleTypeDef *fifo, UART_Fifo_ItemTypeDef *item);
+uint16_t UART_Fifo_TxIsEmpty(UART_Fifo_HandleTypeDef *fifo);
+int16_t UART_Fifo_Receive(UART_Fifo_HandleTypeDef *fifo);
+uint16_t UART_Fifo_RxIsEmpty(UART_Fifo_HandleTypeDef *fifo);
 void UART_Fifo_TxCpltCallback (UART_HandleTypeDef *huart);
 
 

@@ -75,8 +75,7 @@ void SystemClock_Config(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 
-void My_UART_TxCpltCallback (UART_HandleTypeDef * huart);
-void My_DMA_XferCpltCallback(DMA_HandleTypeDef * hdma);
+void check_UART_rx();
 
 /* USER CODE END PFP */
 
@@ -148,7 +147,7 @@ int main(void)
   item4.size = 15;
 
   ISRcount = 0;
-
+#if 0
   printf("Loading Fifo\r\n");
   UART_Fifo_Transmit(&huart1_fifo, &item1);
   UART_Fifo_Transmit(&huart1_fifo, &item2);
@@ -160,11 +159,32 @@ int main(void)
   printf("ISRCount %ld\r\n", ISRcount); /* should be 4 as fifo (fifo empty) */
   printf("Fifo is empty %s\r\n", (huart1_fifo.head == NULL ? "true" : "false"));
   printf("Done.\r\n");
+#endif
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  printf("Transmitting...\r\n");
+  uint32_t start = HAL_GetTick();
+  UART_Fifo_Transmit(&huart1_fifo, &item1);
+  UART_Fifo_Transmit( &huart1_fifo, &item2 );
+  UART_Fifo_Transmit( &huart1_fifo, &item3 );
+  UART_Fifo_Transmit( &huart1_fifo, &item4 );
+
+  while ( HAL_GetTick( ) < start + 100 )
+      check_UART_rx( );
+  //UART_Fifo_Transmit( &huart1_fifo, &item2 );
+  while ( HAL_GetTick( ) < start + 200 )
+      check_UART_rx( );
+  //UART_Fifo_Transmit( &huart1_fifo, &item3 );
+  while ( HAL_GetTick( ) < start + 300 )
+      check_UART_rx( );
+  //UART_Fifo_Transmit( &huart1_fifo, &item4 );
+  while ( HAL_GetTick( ) < start + 400 )
+      check_UART_rx( );
+  printf( "Done.\r\n" );
 
   while (1)
   {
@@ -241,12 +261,23 @@ static void MX_NVIC_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-#if 0
-void My_UART_TxCpltCallback (UART_HandleTypeDef * huart)
+
+void check_UART_rx()
 {
-    ++UartIsrCount;
+    int16_t data = UART_Fifo_Receive(&huart1_fifo);
+    if (data == '\r')
+    {
+        printf("`\\r'");
+    }
+    else if (data == '\n')
+    {
+        printf("`\\n'\r\n");
+    }
+    else if (data >= 0)
+    {
+        printf("`%c'", (uint8_t) data);
+    }
 }
-#endif
 
 void blink_fault( uint32_t code )
 {
