@@ -69,8 +69,8 @@ typedef struct UART_Fifo_HandleStruct
 } UART_Fifo_HandleTypeDef;
 
 
-extern UART_Fifo_HandleTypeDef huart_fifo1;
-extern UART_Fifo_HandleTypeDef huart_fifo2;
+extern UART_Fifo_HandleTypeDef huart1_fifo;
+extern UART_Fifo_HandleTypeDef huart2_fifo;
 
 /**
  *  Public Function Prototypes

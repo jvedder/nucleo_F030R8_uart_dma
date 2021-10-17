@@ -150,15 +150,15 @@ int main(void)
   ISRcount = 0;
 
   printf("Loading Fifo\r\n");
-  UART_Fifo_Transmit(&huart_fifo1, &item1);
-  UART_Fifo_Transmit(&huart_fifo1, &item2);
-  UART_Fifo_Transmit(&huart_fifo1, &item3);
-  UART_Fifo_Transmit(&huart_fifo1, &item4);
+  UART_Fifo_Transmit(&huart1_fifo, &item1);
+  UART_Fifo_Transmit(&huart1_fifo, &item2);
+  UART_Fifo_Transmit(&huart1_fifo, &item3);
+  UART_Fifo_Transmit(&huart1_fifo, &item4);
   printf("ISRCount %ld\r\n", ISRcount);  /* should be 0 if we are fast enough */
   printf("Delay...\r\n");
   HAL_Delay(100);
   printf("ISRCount %ld\r\n", ISRcount); /* should be 4 as fifo (fifo empty) */
-  printf("Fifo is empty %s\r\n", (huart_fifo1.head == NULL ? "true" : "false"));
+  printf("Fifo is empty %s\r\n", (huart1_fifo.head == NULL ? "true" : "false"));
   printf("Done.\r\n");
 
   /* USER CODE END 2 */

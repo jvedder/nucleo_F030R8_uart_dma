@@ -43,8 +43,8 @@
 /**
  *  Private Defines and Macros
  */
-UART_Fifo_HandleTypeDef huart_fifo1;
-UART_Fifo_HandleTypeDef huart_fifo2;
+UART_Fifo_HandleTypeDef huart1_fifo;
+UART_Fifo_HandleTypeDef huart2_fifo;
 
 
 /**
@@ -59,13 +59,13 @@ UART_Fifo_HandleTypeDef huart_fifo2;
 
 void UART_Fifo_Init( void )
 {
-    huart_fifo1.huart = &huart1;
-    huart_fifo1.head = NULL;
-    huart_fifo1.tail = NULL;
+    huart1_fifo.huart = &huart1;
+    huart1_fifo.head = NULL;
+    huart1_fifo.tail = NULL;
 
-    huart_fifo2.huart = &huart2;
-    huart_fifo2.head = NULL;
-    huart_fifo2.tail = NULL;
+    huart2_fifo.huart = &huart2;
+    huart2_fifo.head = NULL;
+    huart2_fifo.tail = NULL;
 
     huart1.TxCpltCallback = UART_Fifo_TxCpltCallback;
     huart2.TxCpltCallback = UART_Fifo_TxCpltCallback;
@@ -118,7 +118,7 @@ void UART_Fifo_TxCpltCallback (UART_HandleTypeDef *huart)
     ++ISRcount;
 
     /* select fifo based on which UART this interrupt is for */
-    UART_Fifo_HandleTypeDef *fifo = (huart == &huart1) ? &huart_fifo1 : &huart_fifo2;
+    UART_Fifo_HandleTypeDef *fifo = (huart == &huart1) ? &huart1_fifo : &huart2_fifo;
 
     /* mark transmit complete on the current fifo item by setting size=0 */
     fifo->head->size = 0;
