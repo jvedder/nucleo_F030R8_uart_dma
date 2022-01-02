@@ -9,7 +9,7 @@
  ******************************************************************************
  * MIT License
  *
- * Copyright (c) 2021 John Vedder
+ * Copyright (c) 2022 John Vedder
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this hardware, software, and associated documentation files (the "Product"),
@@ -41,37 +41,33 @@
 
 
 /**
- *  Private Defines and Macros
+ *  Exported Variables
  */
 UART_Fifo_HandleTypeDef huart1_fifo;
 UART_Fifo_HandleTypeDef huart2_fifo;
 
 
 /**
- *  Private Variables
- */
-
-
-
-/**
  *  Public Methods
  */
 
-void UART_Fifo_Init( void )
+void UART_Fifo_Init( UART_Fifo_HandleTypeDef *fifo, UART_HandleTypeDef *huart )
 {
-    huart1_fifo.huart = &huart1;
-    huart1_fifo.head = NULL;
-    huart1_fifo.tail = NULL;
+    assert_param(fifo != NULL);
+    assert_param(huart != NULL);
 
-    huart2_fifo.huart = &huart2;
-    huart2_fifo.head = NULL;
-    huart2_fifo.tail = NULL;
+    fifo->huart = huart;
+    fifo->head = NULL;
+    fifo->tail = NULL;
 
-    huart1.TxCpltCallback = UART_Fifo_TxCpltCallback;
-    huart2.TxCpltCallback = UART_Fifo_TxCpltCallback;
-
-    HAL_UART_Receive_DMA(&huart1, huart1_fifo.RxBuffer, RX_BUFFER_LENGTH);
+    huart->TxCpltCallback = UART_Fifo_TxCpltCallback;
 }
+
+void UART_Fifo_StartRx( UART_Fifo_HandleTypeDef *fifo )
+{
+    HAL_UART_Receive_DMA(fifo->huart, fifo->RxBuffer, RX_BUFFER_LENGTH);
+}
+
 
 void UART_Fifo_Transmit (UART_Fifo_HandleTypeDef *fifo, UART_Fifo_ItemTypeDef *item)
 {

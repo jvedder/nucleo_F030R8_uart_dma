@@ -116,7 +116,10 @@ int main(void)
   MX_DMA_Init();
   MX_USART1_UART_Init();
 
-  UART_Fifo_Init();
+  UART_Fifo_Init( &huart1, &huart1_fifo );
+  UART_Fifo_Init( &huart2, &huart2_fifo );
+
+  UART_Fifo_StartRx(&huart1);
 
   /* Initialize interrupts */
   MX_NVIC_Init();

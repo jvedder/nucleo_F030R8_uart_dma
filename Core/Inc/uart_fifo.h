@@ -10,7 +10,7 @@
  ******************************************************************************
  * MIT License
  *
- * Copyright (c) 2021 John Vedder
+ * Copyright (c) 2022 John Vedder
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this hardware, software, and associated documentation files (the "Product"),
@@ -49,7 +49,7 @@
 #define RX_BUFFER_LENGTH    32
 
 /**
-  * @brief  UART handle Structure definition
+  * @brief  Structure to hold one item in the Tx Linked List.
   */
 typedef struct UART_Fifo_ItemStruct
 {
@@ -60,7 +60,7 @@ typedef struct UART_Fifo_ItemStruct
 } UART_Fifo_ItemTypeDef;
 
 /**
-  * @brief  UART handle Structure definition
+  * @brief  Structure to hold the Tx Linked List state and Rx Circular buffer.
   */
 typedef struct UART_Fifo_HandleStruct
 {
@@ -74,13 +74,18 @@ typedef struct UART_Fifo_HandleStruct
     uint16_t                        RxOut;
 } UART_Fifo_HandleTypeDef;
 
+
+/**
+ *  Exported Variables
+ */
 extern UART_Fifo_HandleTypeDef huart1_fifo;
 extern UART_Fifo_HandleTypeDef huart2_fifo;
 
 /**
  *  Public Function Prototypes
  */
-void UART_Fifo_Init( void );
+void UART_Fifo_Init( UART_HandleTypeDef *huart, UART_Fifo_HandleTypeDef *fifo, int StartRx );
+void UART_Fifo_StartRx( UART_Fifo_HandleTypeDef *fifo );
 void UART_Fifo_Transmit (UART_Fifo_HandleTypeDef *fifo, UART_Fifo_ItemTypeDef *item);
 uint16_t UART_Fifo_TxIsEmpty(UART_Fifo_HandleTypeDef *fifo);
 int16_t UART_Fifo_Receive(UART_Fifo_HandleTypeDef *fifo);
