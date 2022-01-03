@@ -43,15 +43,25 @@
 /**
  *  Exported Variables
  */
-UART_Fifo_HandleTypeDef huart1_fifo;
-UART_Fifo_HandleTypeDef huart2_fifo;
+UART_TxFifo_TypeDef huart1_txfifo;
+UART_TxFifo_TypeDef huart2_txfifo;
 
+UART_TxFifo_TypeDef *TxFifos[] = {&huart1_txfifo, &huart1_txfifo, NULL};
+
+UART_RxFifo_TypeDef huart1_rxfifo;
+UART_RxFifo_TypeDef huart2_rxfifo;
+
+
+/**
+ *  Function Prototypes
+ */
+void UART_TxFifo_TxCpltCallback (UART_HandleTypeDef *huart);
 
 /**
  *  Public Methods
  */
 
-void UART_Fifo_Init( UART_Fifo_HandleTypeDef *fifo, UART_HandleTypeDef *huart )
+void UART_TxFifo_Init( UART_TxFifo_TypeDef *fifo, UART_HandleTypeDef *huart )
 {
     assert_param(fifo != NULL);
     assert_param(huart != NULL);
@@ -60,16 +70,10 @@ void UART_Fifo_Init( UART_Fifo_HandleTypeDef *fifo, UART_HandleTypeDef *huart )
     fifo->head = NULL;
     fifo->tail = NULL;
 
-    huart->TxCpltCallback = UART_Fifo_TxCpltCallback;
+    huart->TxCpltCallback = UART_TxFifo_TxCpltCallback;
 }
 
-void UART_Fifo_StartRx( UART_Fifo_HandleTypeDef *fifo )
-{
-    HAL_UART_Receive_DMA(fifo->huart, fifo->RxBuffer, RX_BUFFER_LENGTH);
-}
-
-
-void UART_Fifo_Transmit (UART_Fifo_HandleTypeDef *fifo, UART_Fifo_ItemTypeDef *item)
+void UART_TxFifo_Transmit (UART_TxFifo_TypeDef *fifo, UART_TxFifo_ItemTypeDef *item)
 {
     assert_param(fifo != NULL);
     assert_param(item != NULL);
@@ -107,15 +111,23 @@ void UART_Fifo_Transmit (UART_Fifo_HandleTypeDef *fifo, UART_Fifo_ItemTypeDef *i
     }
 }
 
-uint16_t UART_Fifo_TxIsEmpty(UART_Fifo_HandleTypeDef *fifo)
+uint16_t UART_TxFifo_IsEmpty(UART_TxFifo_TypeDef *fifo)
 {
     assert_param(fifo != NULL);
 
     return (fifo->head == NULL) ? 1 : 0;
 }
 
+void UART_RxFifo_Init( UART_RxFifo_TypeDef *fifo, UART_HandleTypeDef *huart )
+{
+    assert_param(fifo != NULL);
+    assert_param(huart != NULL);
 
-int16_t UART_Fifo_Receive(UART_Fifo_HandleTypeDef *fifo)
+    fifo->huart = huart;
+    HAL_UART_Receive_DMA(fifo->huart, fifo->RxBuffer, RX_BUFFER_LENGTH);
+}
+
+int16_t UART_RxFifo_Receive(UART_RxFifo_TypeDef *fifo)
 {
     assert_param(fifo != NULL);
 
@@ -137,7 +149,7 @@ int16_t UART_Fifo_Receive(UART_Fifo_HandleTypeDef *fifo)
     return data;
 }
 
-uint16_t UART_Fifo_RxIsEmpty(UART_Fifo_HandleTypeDef *fifo)
+uint16_t UART_RxFifo_IsEmpty(UART_RxFifo_TypeDef *fifo)
 {
     assert_param(fifo != NULL);
 
@@ -148,30 +160,37 @@ uint16_t UART_Fifo_RxIsEmpty(UART_Fifo_HandleTypeDef *fifo)
     return (fifo->RxOut == RxIn) ? 1 : 0;
 }
 
-void UART_Fifo_TxCpltCallback (UART_HandleTypeDef *huart)
+void UART_TxFifo_TxCpltCallback (UART_HandleTypeDef *huart)
 {
     assert_param(huart != NULL);
 
     /* count calls for debug */
     ++ISRcount;
 
-    /* select fifo based on which UART this interrupt is for */
-    UART_Fifo_HandleTypeDef *fifo = (huart == &huart1) ? &huart1_fifo : &huart2_fifo;
+    /* select FIFO based on which UART this interrupt is for */
+    // UART_TxFifo_TypeDef *fifo = (huart == &huart1) ? &huart1_fifo : &huart2_fifo;
+    UART_TxFifo_TypeDef **fifo = TxFifos;
+    while (fifo)
+    {
+        if ( (*fifo)->huart == huart) break;
+        fifo++;
+    }
+    if (*fifo == NULL) return;
 
-    /* mark transmit complete on the current fifo item by setting size=0 */
-    fifo->head->size = 0;
+    /* mark transmit complete on the current FIFO item by setting size=0 */
+    (*fifo)->head->size = 0;
 
-    /* move fifo head to the next item in the queue */
-    fifo->head = fifo->head->next;
-    if (fifo->head == NULL)
+    /* move FIFO head to the next item in the queue */
+    (*fifo)->head = (*fifo)->head->next;
+    if ((*fifo)->head == NULL)
     {
         /* queue is now empty */
-        fifo->tail = NULL;
+        (*fifo)->tail = NULL;
     }
     else
     {
         /* start DMA engine on the new head of the queue */
-        HAL_UART_Transmit_DMA(fifo->huart, fifo->head->data, fifo->head->size);
+        HAL_UART_Transmit_DMA((*fifo)->huart, (*fifo)->head->data, (*fifo)->head->size);
     }
 }
 

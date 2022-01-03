@@ -51,46 +51,61 @@
 /**
   * @brief  Structure to hold one item in the Tx Linked List.
   */
-typedef struct UART_Fifo_ItemStruct
+typedef struct UART_TxFifo_ItemStruct
 {
-    uint8_t                     *data;
-    volatile uint16_t           size;
-    struct UART_Fifo_ItemStruct *next;
+    uint8_t                         *data;
+    volatile uint16_t               size;
+    struct UART_TxFifo_ItemStruct   *next;
 
-} UART_Fifo_ItemTypeDef;
+} UART_TxFifo_ItemTypeDef;
 
 /**
-  * @brief  Structure to hold the Tx Linked List state and Rx Circular buffer.
+  * @brief  Structure to hold the UART Transmit Linked List state
   */
-typedef struct UART_Fifo_HandleStruct
+typedef struct UART_TxFifo_Struct
 {
-    /* Linked listed for UART Transmit via DMA */
     UART_HandleTypeDef              *huart;
-    volatile UART_Fifo_ItemTypeDef  *head;
-    UART_Fifo_ItemTypeDef           *tail;
+
+    /* Linked listed for UART Transmit via DMA */
+    volatile UART_TxFifo_ItemTypeDef  *head;
+    UART_TxFifo_ItemTypeDef           *tail;
+
+} UART_TxFifo_TypeDef;
+
+/**
+  * @brief  Structure to hold the UART Receive Circular buffer.
+  */
+typedef struct UART_RxFifo_Struct
+{
+    UART_HandleTypeDef              *huart;
 
     /* Circular buffer for UART Receive via DMA */
     uint8_t                         RxBuffer[RX_BUFFER_LENGTH];
-    uint16_t                        RxOut;
-} UART_Fifo_HandleTypeDef;
 
+    /* The index of the "out" position of the circular buffer */
+    uint16_t                        RxOut;
+
+    /* Note: The index of the "in" position of the circular buffer is stored in the DMA hardware */
+
+} UART_RxFifo_TypeDef;
 
 /**
  *  Exported Variables
  */
-extern UART_Fifo_HandleTypeDef huart1_fifo;
-extern UART_Fifo_HandleTypeDef huart2_fifo;
+extern UART_TxFifo_TypeDef huart1_txfifo;
+extern UART_TxFifo_TypeDef huart2_txfifo;
+
+extern UART_RxFifo_TypeDef huart1_rxfifo;
+extern UART_RxFifo_TypeDef huart2_rxfifo;
 
 /**
  *  Public Function Prototypes
  */
-void UART_Fifo_Init( UART_HandleTypeDef *huart, UART_Fifo_HandleTypeDef *fifo, int StartRx );
-void UART_Fifo_StartRx( UART_Fifo_HandleTypeDef *fifo );
-void UART_Fifo_Transmit (UART_Fifo_HandleTypeDef *fifo, UART_Fifo_ItemTypeDef *item);
-uint16_t UART_Fifo_TxIsEmpty(UART_Fifo_HandleTypeDef *fifo);
-int16_t UART_Fifo_Receive(UART_Fifo_HandleTypeDef *fifo);
-uint16_t UART_Fifo_RxIsEmpty(UART_Fifo_HandleTypeDef *fifo);
-void UART_Fifo_TxCpltCallback (UART_HandleTypeDef *huart);
-
+void UART_TxFifo_Init( UART_TxFifo_TypeDef *fifo, UART_HandleTypeDef *huart );
+void UART_TxFifo_Transmit (UART_TxFifo_TypeDef *fifo, UART_TxFifo_ItemTypeDef *item);
+uint16_t UART_TxFifo_IsEmpty(UART_TxFifo_TypeDef *fifo);
+void UART_RxFifo_Init( UART_RxFifo_TypeDef *fifo, UART_HandleTypeDef *huart );
+int16_t UART_RxFifo_Receive(UART_RxFifo_TypeDef *fifo);
+uint16_t UART_RxFifo_IsEmpty(UART_RxFifo_TypeDef *fifo);
 
 #endif /* UART_FIFO_H */

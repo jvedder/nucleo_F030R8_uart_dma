@@ -60,10 +60,10 @@ uint8_t TxBuffer2[] = "HELLO WORLD 2\r\n";
 uint8_t TxBuffer3[] = "HELLO WORLD 3\r\n";
 uint8_t TxBuffer4[] = "HELLO WORLD 4\r\n";
 
-UART_Fifo_ItemTypeDef item1;
-UART_Fifo_ItemTypeDef item2;
-UART_Fifo_ItemTypeDef item3;
-UART_Fifo_ItemTypeDef item4;
+UART_TxFifo_ItemTypeDef item1;
+UART_TxFifo_ItemTypeDef item2;
+UART_TxFifo_ItemTypeDef item3;
+UART_TxFifo_ItemTypeDef item4;
 
 /* debug instrumentation */
 __IO uint32_t ISRcount = 0;
@@ -116,10 +116,12 @@ int main(void)
   MX_DMA_Init();
   MX_USART1_UART_Init();
 
-  UART_Fifo_Init( &huart1, &huart1_fifo );
-  UART_Fifo_Init( &huart2, &huart2_fifo );
+  UART_TxFifo_Init( &huart1_txfifo, &huart1 );
+  UART_TxFifo_Init( &huart2_txfifo, &huart2 );
 
-  UART_Fifo_StartRx(&huart1);
+  UART_RxFifo_Init( &huart1_rxfifo, &huart1 );
+  UART_RxFifo_Init( &huart1_rxfifo, &huart1 );
+
 
   /* Initialize interrupts */
   MX_NVIC_Init();
@@ -171,20 +173,20 @@ int main(void)
 
   printf("Transmitting...\r\n");
   uint32_t start = HAL_GetTick();
-  UART_Fifo_Transmit(&huart1_fifo, &item1);
-  UART_Fifo_Transmit( &huart1_fifo, &item2 );
-  UART_Fifo_Transmit( &huart1_fifo, &item3 );
-  UART_Fifo_Transmit( &huart1_fifo, &item4 );
+  UART_TxFifo_Transmit( &huart1_txfifo, &item1);
+//  UART_TxFifo_Transmit( &huart1_txfifo, &item2 );
+//  UART_TxFifo_Transmit( &huart1_txfifo, &item3 );
+//  UART_TxFifo_Transmit( &huart1_txfifo, &item4 );
 
   while ( HAL_GetTick( ) < start + 100 )
       check_UART_rx( );
-  //UART_Fifo_Transmit( &huart1_fifo, &item2 );
+  UART_TxFifo_Transmit( &huart1_txfifo, &item2 );
   while ( HAL_GetTick( ) < start + 200 )
       check_UART_rx( );
-  //UART_Fifo_Transmit( &huart1_fifo, &item3 );
+  UART_TxFifo_Transmit( &huart1_txfifo, &item3 );
   while ( HAL_GetTick( ) < start + 300 )
       check_UART_rx( );
-  //UART_Fifo_Transmit( &huart1_fifo, &item4 );
+  UART_TxFifo_Transmit( &huart1_txfifo, &item4 );
   while ( HAL_GetTick( ) < start + 400 )
       check_UART_rx( );
   printf( "Done.\r\n" );
@@ -267,7 +269,7 @@ static void MX_NVIC_Init(void)
 
 void check_UART_rx()
 {
-    int16_t data = UART_Fifo_Receive(&huart1_fifo);
+    int16_t data = UART_RxFifo_Receive(&huart1_rxfifo);
     if (data == '\r')
     {
         printf("`\\r'");
