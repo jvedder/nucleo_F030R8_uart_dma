@@ -67,6 +67,7 @@ UART_TxFifo_ItemTypeDef item4;
 
 /* debug instrumentation */
 __IO uint32_t ISRcount = 0;
+uint32_t start_tick = 0;
 
 /* USER CODE END PV */
 
@@ -75,7 +76,8 @@ void SystemClock_Config(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 
-void check_UART_rx();
+void configure_tx_items( void );
+int16_t check_UART_rx();
 
 /* USER CODE END PFP */
 
@@ -120,7 +122,7 @@ int main(void)
   UART_TxFifo_Init( &huart2_txfifo, &huart2 );
 
   UART_RxFifo_Init( &huart1_rxfifo, &huart1 );
-  UART_RxFifo_Init( &huart1_rxfifo, &huart1 );
+  UART_RxFifo_Init( &huart2_rxfifo, &huart2 );
 
 
   /* Initialize interrupts */
@@ -142,54 +144,69 @@ int main(void)
   HAL_GPIO_WritePin(LED_GRN_GPIO_Port, LED_GRN_Pin, GPIO_PIN_RESET);
 #endif
 
-  item1.data = TxBuffer1;
-  item1.size = 15;
-  item2.data = TxBuffer2;
-  item2.size = 15;
-  item3.data = TxBuffer3;
-  item3.size = 15;
-  item4.data = TxBuffer4;
-  item4.size = 15;
 
+#if 1
   ISRcount = 0;
-#if 0
-  printf("Loading Fifo\r\n");
-  UART_Fifo_Transmit(&huart1_fifo, &item1);
-  UART_Fifo_Transmit(&huart1_fifo, &item2);
-  UART_Fifo_Transmit(&huart1_fifo, &item3);
-  UART_Fifo_Transmit(&huart1_fifo, &item4);
-  printf("ISRCount %ld\r\n", ISRcount);  /* should be 0 if we are fast enough */
+  configure_tx_items();
+  printf("TEST #1\r\n");
+  printf("Loading Tx Fifo\r\n");
+  UART_TxFifo_Transmit(&huart1_txfifo, &item1);
+  UART_TxFifo_Transmit(&huart1_txfifo, &item2);
+  UART_TxFifo_Transmit(&huart1_txfifo, &item3);
+  UART_TxFifo_Transmit(&huart1_txfifo, &item4);
+  printf("Tx ISRCount %ld\r\n", ISRcount);  /* should be 0 if we are fast enough */
   printf("Delay...\r\n");
   HAL_Delay(100);
-  printf("ISRCount %ld\r\n", ISRcount); /* should be 4 as fifo (fifo empty) */
-  printf("Fifo is empty %s\r\n", (huart1_fifo.head == NULL ? "true" : "false"));
-  printf("Done.\r\n");
+  printf("ISRCount %ld (should be 4)\r\n", ISRcount); /* should be 4 as fifo (fifo empty) */
+  printf("TxFifo.head is NULL: %s (should be true)\r\n", (huart1_txfifo.head == NULL ? "true" : "false"));
+  printf("TxFifo.tail is NULL: %s (should be true)\r\n", (huart1_txfifo.tail == NULL ? "true" : "false"));
+
+  /* Empty the RX fifo */
+  while ( check_UART_rx() >= 0 );
+  printf("Test #1 Done.\r\n\r\n");
 #endif
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
+#if 1
+  configure_tx_items();
+  printf("TEST #2\r\n");
   printf("Transmitting...\r\n");
-  uint32_t start = HAL_GetTick();
+  start_tick = HAL_GetTick();
   UART_TxFifo_Transmit( &huart1_txfifo, &item1);
-//  UART_TxFifo_Transmit( &huart1_txfifo, &item2 );
-//  UART_TxFifo_Transmit( &huart1_txfifo, &item3 );
-//  UART_TxFifo_Transmit( &huart1_txfifo, &item4 );
+  while ( HAL_GetTick( ) < start_tick + 100 )
+      check_UART_rx( );
 
-  while ( HAL_GetTick( ) < start + 100 )
-      check_UART_rx( );
   UART_TxFifo_Transmit( &huart1_txfifo, &item2 );
-  while ( HAL_GetTick( ) < start + 200 )
+  while ( HAL_GetTick( ) < start_tick + 200 )
       check_UART_rx( );
+
   UART_TxFifo_Transmit( &huart1_txfifo, &item3 );
-  while ( HAL_GetTick( ) < start + 300 )
+  while ( HAL_GetTick( ) < start_tick + 300 )
       check_UART_rx( );
+
   UART_TxFifo_Transmit( &huart1_txfifo, &item4 );
-  while ( HAL_GetTick( ) < start + 400 )
+  while ( HAL_GetTick( ) < start_tick + 400 )
       check_UART_rx( );
-  printf( "Done.\r\n" );
+  printf( "Test #2 Done.\r\n\r\n" );
+#endif
+
+#if 1
+  configure_tx_items();
+  printf("TEST #3\r\n");
+  printf("Transmitting...\r\n");
+  start_tick = HAL_GetTick();
+  UART_TxFifo_Transmit( &huart1_txfifo, &item1);
+  UART_TxFifo_Transmit( &huart1_txfifo, &item2 );
+  UART_TxFifo_Transmit( &huart1_txfifo, &item3 );
+  UART_TxFifo_Transmit( &huart1_txfifo, &item4 );
+
+  while ( HAL_GetTick( ) < start_tick + 400 )
+      check_UART_rx( );
+  printf( "Test #3 Done.\r\n\r\n" );
+#endif
 
   while (1)
   {
@@ -266,8 +283,20 @@ static void MX_NVIC_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+void configure_tx_items( void )
+{
+    item1.data = TxBuffer1;
+    item1.size = 15;
+    item2.data = TxBuffer2;
+    item2.size = 15;
+    item3.data = TxBuffer3;
+    item3.size = 15;
+    item4.data = TxBuffer4;
+    item4.size = 15;
+}
 
-void check_UART_rx()
+
+int16_t check_UART_rx( void )
 {
     int16_t data = UART_RxFifo_Receive(&huart1_rxfifo);
     if (data == '\r')
@@ -282,6 +311,7 @@ void check_UART_rx()
     {
         printf("`%c'", (uint8_t) data);
     }
+    return data;
 }
 
 void blink_fault( uint32_t code )
